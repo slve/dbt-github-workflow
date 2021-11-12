@@ -1,0 +1,20 @@
+---
+default:
+  target: dev
+  outputs:
+    airflow:
+      type: bigquery
+      method: service-account
+      keyfile: "{{ env_var('KEYFILE_DIR') }}/keyfile.json"
+      project: "{{ env_var('GCLOUD_PROJECT') }}"
+      schema: airflow_sandbox
+      location: US
+      threads: 50
+    dev:
+      type: bigquery
+      method: service-account
+      keyfile: "{{ env_var('KEYFILE_DIR') }}/keyfile.json"
+      project: "{{ env_var('GCLOUD_PROJECT') }}"
+      schema: dev_sandbox
+      location: US
+      threads: 100

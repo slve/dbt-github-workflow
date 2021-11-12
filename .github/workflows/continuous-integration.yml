@@ -1,0 +1,73 @@
+---
+name: continuous-integration
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  continuous-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: "actions/checkout@v2"
+      - uses: "actions/setup-python@v2"
+        with:
+          python-version: 3.9
+      - uses: actions/cache@v2
+        id: cache-python
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.local/lib/python3.9/site-packages/
+            ${{ env.pythonLocation }}
+          key: mycache-${{ hashFiles(env.pythonLocation) }}-${{ hashFiles('requirements.txt') }}
+      - name: Install requirements
+        run: |
+          pip install --upgrade --upgrade-strategy eager -r requirements.txt
+        if: steps.cache-python.outputs.cache-hit != 'true'
+      - id: file_changes
+        uses: "trilom/file-changes-action@v1.2.4"
+        with:
+          output: ' '
+      - name: Setup dbt profile
+        run: |
+          mkdir $HOME/.dbt
+          cp profiles.yml $HOME/.dbt/
+          ls -la $HOME/.dbt/
+          echo 'dbt profile is fine'
+      - name: Setup secret key
+        run: |
+          echo "$SERVICE_ACCOUNT_KEY" > $HOME/keyfile.json
+          ls -la $HOME/keyfile.json
+          echo 'keyfile is fine'
+        env:
+          SERVICE_ACCOUNT_KEY: ${{ secrets.SERVICE_ACCOUNT_KEY }}
+      - name: Build
+        run: |
+          export KEYFILE_DIR=$HOME
+          make build ${{ steps.file_changes.outputs.files }}
+      - name: Authenticate on GCS
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          #version: '361.0.0'
+          #project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.SERVICE_ACCOUNT_KEY }}
+          export_default_credentials: true
+        if: github.event.pull_request.merged || github.ref == 'refs/heads/main'
+      - name: Use gcloud CLI
+        run: gcloud info
+        if: github.event.pull_request.merged || github.ref == 'refs/heads/main'
+      - name: Deploy to airflow
+        run: |
+          export KEYFILE_DIR=$HOME
+          export COMPOSER_BUCKET=${{ secrets.COMPOSER_BUCKET }}
+          make deploy
+        if: github.event.pull_request.merged || github.ref == 'refs/heads/main'

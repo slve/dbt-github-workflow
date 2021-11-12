@@ -1,0 +1,43 @@
+---
+name: 'dbt-github-workflow'
+version: '1.0.0'
+config-version: 2
+
+# This setting configures which "profile"
+# from ~/.dbt/profiles.yml
+# dbt will use for this project.
+profile: 'default'
+
+source-paths: ["models"]
+analysis-paths: ["analysis"]
+test-paths: ["tests"]
+data-paths: ["data"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+# directory which will store compiled SQL files
+target-path: "target"
+# directories to be removed by `dbt clean`
+clean-targets:
+    - "target"
+    - "dbt_modules"
+
+
+# Configuring models
+# Full documentation: https://docs.getdbt.com/docs/configuring-models
+# These settings can be overridden in the individual model files
+# using the `{{ config(...) }}` macro.
+models:
+    _:
+        +tags:
+            - projecttag
+        +materialized: "{{ 'view' if target.name == 'dev' else 'table' }}"
+        sandbox:
+            +schema: {{ target.name }}_sandbox
+            +materialized: "{{ 'view' if target.name == 'dev' else 'table' }}"
+            +tags:
+                - foldertag
+            dbttest:
+                +tags:
+                    - modeltag
+                +alias: mytest

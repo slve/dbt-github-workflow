@@ -1,0 +1,30 @@
+---
+repos:
+  - repo: https://github.com/offbi/pre-commit-dbt
+    rev: v1.0.0
+    hooks:
+      - id: dbt-compile
+        args: ["--cmd-flags", "++profiles-dir", ".", "--model-prefix", "+", "--"]
+      - id: check-script-semicolon
+      - id: check-script-ref-and-source
+      - id: check-script-has-no-table-name
+      # - id: dbt-test
+      # - id: dbt-docs-generate
+      # - id: check-model-has-all-columns
+      #   name: Check columns - core
+      #   files: ^models/core
+      # - id: check-model-has-all-columns
+      #   name: Check columns - mart
+      #   files: ^models/mart
+      # - id: check-model-columns-have-desc
+      #   files: ^models/mart
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 0.8.1
+    hooks:
+      - id: sqlfluff-lint
+        additional_dependencies:
+          - sqlfluff-templater-dbt
+        types: [sql]
+        exclude: "^target/|^models_archive/"
+        args:
+          - -p 10
