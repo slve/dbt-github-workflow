@@ -1,0 +1,12 @@
+---
+version: 2
+
+models:
+    - name: dbttest
+      description: ""
+
+      columns:
+          - name: "field1"
+            description: "description"
+            tests:
+                - not_null
